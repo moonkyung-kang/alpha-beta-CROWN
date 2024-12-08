@@ -41,29 +41,29 @@ def simple_conv_model(in_channel, out_dim):
     )
     return model
 
+
+
+
+
 def simple_linear_model(in_channel, out_dim):
-    
-    model = nn.Sequential(
-        nn.Flatten(),
-        nn.Linear(3072,2000),
-        nn.ReLU(),
-        nn.Linear(2000,1500),
-        nn.ReLU(),
-        nn.Linear(1500,1000),
-        nn.ReLU(),
-        nn.Linear(1000,500),
-        nn.ReLU(),
-        nn.Linear(500,100),
-        nn.ReLU(),
-        nn.Linear(100,100),
-        nn.ReLU(),
-        nn.Linear(100,100),
-        nn.ReLU(),
-        nn.Linear(100,100),
-        nn.ReLU(),
-        nn.Linear(100, 10)
-    )
-    return model
+  
+  model = nn.Sequential(
+          nn.Flatten(),
+          nn.Linear(3072, 512),
+          nn.BatchNorm1d(512),
+          nn.ReLU(),
+          nn.Dropout(0.5),
+          nn.Linear(512, 256),
+          nn.BatchNorm1d(256),
+          nn.ReLU(),
+          nn.Dropout(0.5),
+          nn.Linear(256, out_dim)
+      )
+  return model
+
+
+
+
 
 def two_relu_toy_model(in_dim=2, out_dim=2):
     """A very simple model, 2 inputs, 2 ReLUs, 2 outputs"""
