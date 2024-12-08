@@ -26,23 +26,22 @@ from torchvision import transforms
 from torchvision import datasets
 import arguments
 
-
+######################################################### 추가한 부분 ###########################################################################
 def simple_conv_model(in_channel, out_dim):
-    """Simple Convolutional model for svhn."""
+
     model = nn.Sequential(
         nn.Conv2d(in_channel, 16, 4, stride=2, padding=0),
         nn.ReLU(),
         nn.Conv2d(16, 32, 4, stride=2, padding=0),
         nn.ReLU(),
+        nn.Conv2d(32, 64, 4, stride=2, padding=0),
+        nn.ReLU(),
         nn.Flatten(),
-        nn.Linear(32*6*6,100),
+        nn.Linear(64*2*2,100),
         nn.ReLU(),
         nn.Linear(100, out_dim)
     )
     return model
-
-
-
 
 
 def simple_linear_model(in_channel, out_dim):
@@ -60,49 +59,6 @@ def simple_linear_model(in_channel, out_dim):
           nn.Linear(256, out_dim)
       )
   return model
-
-
-
-
-
-def two_relu_toy_model(in_dim=2, out_dim=2):
-    """A very simple model, 2 inputs, 2 ReLUs, 2 outputs"""
-    model = nn.Sequential(
-        nn.Linear(in_dim, 2),
-        nn.ReLU(),
-        nn.Linear(2, out_dim)
-    )
-    # [relu(x+2y)-relu(2x+y)+2, 0*relu(2x-y)+0*relu(-x+y)]
-    model[0].weight.data = torch.tensor([[1., 2.], [2., 1.]])
-    model[0].bias.data = torch.tensor([0., 0.])
-    model[2].weight.data = torch.tensor([[1., -1.], [0., 0.]])
-    model[2].bias.data = torch.tensor([2., 0.])
-    return model
-
-
-def simple_box_data(spec):
-    """a customized box data: x=[-1, 1], y=[-1, 1]"""
-    eps = spec["epsilon"]
-    if eps is None:
-        eps = 2.
-    X = torch.tensor([[0., 0.]]).float()
-    labels = torch.tensor([0]).long()
-    eps_temp = torch.tensor(eps).reshape(1, -1)
-    data_max = torch.tensor(10.).reshape(1, -1)
-    data_min = torch.tensor(-10.).reshape(1, -1)
-    return X, labels, data_max, data_min, eps_temp
-
-
-def box_data(dim, low=0., high=1., segments=10, num_classes=10, eps=None):
-    """Generate fake datapoints."""
-    step = (high - low) / segments
-    data_min = torch.linspace(low, high - step, segments).unsqueeze(1).expand(segments, dim)  # Per element lower bounds.
-    data_max = torch.linspace(low + step, high, segments).unsqueeze(1).expand(segments, dim)  # Per element upper bounds.
-    X = (data_min + data_max) / 2.  # Fake data.
-    labels = torch.remainder(torch.arange(0, segments, dtype=torch.int64), num_classes)  # Fake label.
-    eps = None  # Lp norm perturbation epsilon. Not used, since we will return per-element min and max.
-    return X, labels, data_max, data_min, eps
-
 
 def svhn(spec, use_bounds=False):
     """Example dataloader. For MNIST and CIFAR you can actually use existing ones in utils.py."""
@@ -174,6 +130,51 @@ def FashionMNIST(spec, use_bounds=False):
         # Rescale epsilon.
         ret_eps = torch.reshape(eps / std, (1, -1, 1, 1))
     return X, labels, data_max, data_min, ret_eps
+
+###################################################################################################################################################
+
+
+def two_relu_toy_model(in_dim=2, out_dim=2):
+    """A very simple model, 2 inputs, 2 ReLUs, 2 outputs"""
+    model = nn.Sequential(
+        nn.Linear(in_dim, 2),
+        nn.ReLU(),
+        nn.Linear(2, out_dim)
+    )
+    # [relu(x+2y)-relu(2x+y)+2, 0*relu(2x-y)+0*relu(-x+y)]
+    model[0].weight.data = torch.tensor([[1., 2.], [2., 1.]])
+    model[0].bias.data = torch.tensor([0., 0.])
+    model[2].weight.data = torch.tensor([[1., -1.], [0., 0.]])
+    model[2].bias.data = torch.tensor([2., 0.])
+    return model
+
+
+def simple_box_data(spec):
+    """a customized box data: x=[-1, 1], y=[-1, 1]"""
+    eps = spec["epsilon"]
+    if eps is None:
+        eps = 2.
+    X = torch.tensor([[0., 0.]]).float()
+    labels = torch.tensor([0]).long()
+    eps_temp = torch.tensor(eps).reshape(1, -1)
+    data_max = torch.tensor(10.).reshape(1, -1)
+    data_min = torch.tensor(-10.).reshape(1, -1)
+    return X, labels, data_max, data_min, eps_temp
+
+
+def box_data(dim, low=0., high=1., segments=10, num_classes=10, eps=None):
+    """Generate fake datapoints."""
+    step = (high - low) / segments
+    data_min = torch.linspace(low, high - step, segments).unsqueeze(1).expand(segments, dim)  # Per element lower bounds.
+    data_max = torch.linspace(low + step, high, segments).unsqueeze(1).expand(segments, dim)  # Per element upper bounds.
+    X = (data_min + data_max) / 2.  # Fake data.
+    labels = torch.remainder(torch.arange(0, segments, dtype=torch.int64), num_classes)  # Fake label.
+    eps = None  # Lp norm perturbation epsilon. Not used, since we will return per-element min and max.
+    return X, labels, data_max, data_min, eps
+
+
+
+
 
 def simple_cifar10(spec):
     """Example dataloader. For MNIST and CIFAR you can actually use existing ones in utils.py."""

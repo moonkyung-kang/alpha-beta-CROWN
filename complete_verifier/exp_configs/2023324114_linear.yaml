@@ -1,0 +1,30 @@
+general:
+  # device to run verifier
+  device: cuda
+  # Complete verification verifier.
+  # "bab": branch and bound with beta-CROWN;
+  # "mip": mixed integer programming (MIP) formulation;
+  # "bab-refine": branch and bound with intermediate layer bounds computed by MIP.
+  complete_verifier: bab
+# Example for using customized model and data loader.
+# Model and data loader defined in 2023324114.py
+# python abcrown.py --config exp_configs/2023324114_linear.yaml
+model:
+  # Use the simple_conv_model in "2023324114.py".
+  name: Customized("2023324114", "simple_linear_model", in_channel=3, out_dim=10)
+  path: ./models/2023324114_linear.pth
+data:
+  # Use the svhn() loader in "2023324114.py".
+  dataset: Customized("2023324114", "svhn")
+  mean: [0.4914, 0.4822, 0.4465]
+  std: [0.2023, 0.1994, 0.201]
+specification:
+  epsilon: 0.00784313725  # 2./255.
+attack:
+  pgd_restarts: 100
+solver:
+  batch_size: 2048
+  beta-crown:
+    iteration: 20
+bab:
+  timeout: 600
