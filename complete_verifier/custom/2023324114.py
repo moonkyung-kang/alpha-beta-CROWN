@@ -28,7 +28,7 @@ import arguments
 
 
 def simple_conv_model(in_channel, out_dim):
-    """Simple Convolutional model."""
+    """Simple Convolutional model for svhn."""
     model = nn.Sequential(
         nn.Conv2d(in_channel, 16, 4, stride=2, padding=0),
         nn.ReLU(),
@@ -41,6 +41,29 @@ def simple_conv_model(in_channel, out_dim):
     )
     return model
 
+def simple_linear_model(in_channel, out_dim):
+    
+    model = nn.Sequential(
+        nn.Flatten(),
+        nn.Linear(3072,2000),
+        nn.ReLU(),
+        nn.Linear(2000,1500),
+        nn.ReLU(),
+        nn.Linear(1500,1000),
+        nn.ReLU(),
+        nn.Linear(1000,500),
+        nn.ReLU(),
+        nn.Linear(500,100),
+        nn.ReLU(),
+        nn.Linear(100,100),
+        nn.ReLU(),
+        nn.Linear(100,100),
+        nn.ReLU(),
+        nn.Linear(100,100),
+        nn.ReLU(),
+        nn.Linear(100, 10)
+    )
+    return model
 
 def two_relu_toy_model(in_dim=2, out_dim=2):
     """A very simple model, 2 inputs, 2 ReLUs, 2 outputs"""
@@ -90,7 +113,7 @@ def svhn(spec, use_bounds=False):
     mean = torch.tensor(arguments.Config["data"]["mean"])
     std = torch.tensor(arguments.Config["data"]["std"])
     normalize = transforms.Normalize(mean=mean, std=std)
-    test_data = datasets.SVHN(database_path, train=False, download=True, transform=transforms.Compose([transforms.ToTensor(), normalize]))
+    test_data = datasets.SVHN(database_path, split='test', download=True, transform=transforms.Compose([transforms.ToTensor(), normalize]))
     # Load entire dataset.
     testloader = torch.utils.data.DataLoader(test_data, batch_size=10000, shuffle=False, num_workers=4)
     X, labels = next(iter(testloader))
@@ -116,6 +139,41 @@ def svhn(spec, use_bounds=False):
         ret_eps = torch.reshape(eps / std, (1, -1, 1, 1))
     return X, labels, data_max, data_min, ret_eps
 
+
+def FashionMNIST(spec, use_bounds=False):
+    """Example dataloader. For MNIST and CIFAR you can actually use existing ones in utils.py."""
+    eps = spec["epsilon"]
+    assert eps is not None
+    database_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'datasets')
+    # You can access the mean and std stored in config file.
+    mean = torch.tensor(arguments.Config["data"]["mean"])
+    std = torch.tensor(arguments.Config["data"]["std"])
+    normalize = transforms.Normalize(mean=mean, std=std)
+    test_data = datasets.FashionMNIST(database_path, train=False, download=True, transform=transforms.Compose([transforms.ToTensor(), normalize]))
+    # Load entire dataset.
+    testloader = torch.utils.data.DataLoader(test_data, batch_size=10000, shuffle=False, num_workers=4)
+    X, labels = next(iter(testloader))
+    if use_bounds:
+        # Option 1: for each example, we return its element-wise lower and upper bounds.
+        # If you use this option, set --spec_type ("specifications"->"type" in config) to 'bound'.
+        absolute_max = torch.reshape((1. - mean) / std, (1, -1, 1, 1))
+        absolute_min = torch.reshape((0. - mean) / std, (1, -1, 1, 1))
+        # Be careful with normalization.
+        new_eps = torch.reshape(eps / std, (1, -1, 1, 1))
+        data_max = torch.min(X + new_eps, absolute_max)
+        data_min = torch.max(X - new_eps, absolute_min)
+        # In this case, the epsilon does not matter here.
+        ret_eps = None
+    else:
+        # Option 2: return a single epsilon for all data examples, as well as clipping lower and upper bounds.
+        # Set data_max and data_min to be None if no clip. For CIFAR-10 we clip to [0,1].
+        data_max = torch.reshape((1. - mean) / std, (1, -1, 1, 1))
+        data_min = torch.reshape((0. - mean) / std, (1, -1, 1, 1))
+        if eps is None:
+            raise ValueError('You must specify an epsilon')
+        # Rescale epsilon.
+        ret_eps = torch.reshape(eps / std, (1, -1, 1, 1))
+    return X, labels, data_max, data_min, ret_eps
 
 def simple_cifar10(spec):
     """Example dataloader. For MNIST and CIFAR you can actually use existing ones in utils.py."""
